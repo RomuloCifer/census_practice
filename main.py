@@ -59,6 +59,35 @@ def plt_scatter(df, x_col, y_col):
     plt.title(f'Scatter plot of {y_col} vs {x_col}')
     plt.show()
 
+def plt_hist(df):
+    """Plota um histograma para uma coluna específica do DataFrame."""
+    cols_pct = ['Hispanic', 'White', 'Black', 'Native', 'Asian']
+    for col in cols_pct:
+        plt.figure()
+        plt.hist(df[col].dropna(), bins=15)
+        plt.xlabel(col)
+        plt.ylabel('Frequency')
+        plt.title(f'Distribution of {col} population')
+        plt.show()
+
+def plt_hist_lado_a_lado(df, cols, bins=15):
+    fig, axes = plt.subplots(1, len(cols), figsize=(20, 4), sharey=True)
+
+    for ax, col in zip(axes, cols):
+        ax.hist(df[col].dropna(), bins=bins)
+        ax.set_title(f'{col} population')
+        ax.set_xlabel('Percentage of state population (%)')
+
+    axes[0].set_ylabel('Number of states')
+
+    fig.suptitle(
+        'Distribution of population percentages by race across U.S. states',
+        fontsize=14
+    )
+
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    plt.show()
+
 def preencher_faltantes_genero(df):
     """Preenche os valores faltantes das colunas de gênero com base na população total.
     REGRAS: 
@@ -74,23 +103,36 @@ def preencher_faltantes_genero(df):
     )
     logging.info(f"Total de valores faltantes em nas colunas male e female após o preenchimento: {df[['male', 'female']].isna().sum().sum()}")
 
-
     # 2 caso: male nan, female válido
     mask_male_nan = df['male'].isna() & df['female'].notna()
     df.loc[mask_male_nan, 'male'] = (
         df.loc[mask_male_nan, 'TotalPop'] -
         df.loc[mask_male_nan, 'female']
     )
-
     return df
+
+def inspecionar_dataset(df):
+    info = []
+    for col in df.columns:
+        info.append({
+            'coluna': col,
+            'tipo': df[col].dtype,
+            'valores_faltantes': df[col].isna().sum(),
+            'pct_nan': df[col].isna().mean(),
+            'valores_unicos': df[col].nunique(dropna=True)
+        })
+    return pd.DataFrame(info)
+
 
 def main():
     df_cru = carregar_estados_csv('states*.csv')
     df_limpo = limpar_dados(df_cru)
     df_preenchido = preencher_faltantes_genero(df_limpo)
-    plt_scatter(df_preenchido, "female", "Income")
-
-
+    # plt_scatter(df_preenchido, "female", "Income")
+    # relatorio = inspecionar_dataset(df_preenchido)
+    cols_pct = ['Hispanic', 'White', 'Black', 'Native', 'Asian']
+    plt_hist_lado_a_lado(df_preenchido, cols_pct)
+    print(df_preenchido.columns)
 
 if __name__ == "__main__":
     main()
